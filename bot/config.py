@@ -58,6 +58,16 @@ class Settings(BaseSettings):
     default_persona: str = "sergiy"
     default_voice_id: str = "Maxim"
 
+    # ── Оплата (ЮKassa) ──
+    yukassa_shop_id: str = ""
+    yukassa_secret_key: str = ""
+
+    # ── Мониторинг ──
+    sentry_dsn: str = ""
+
+    # ── Rate Limiting ──
+    rate_limit_per_minute: int = 30
+
     # ── App ──
     environment: str = "development"
     log_level: str = "INFO"

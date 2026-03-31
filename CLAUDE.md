@@ -155,7 +155,7 @@ personalai-sergiy/
 | 4 | Media Intelligence Engine | ✅ Готово |
 | 5 | Research Engine + Проактивные сценарии | ✅ Готово |
 | 6 | Mini App (React) | ✅ Готово |
-| 7 | Продакшн-хардение (security, оплата) | ⏳ |
+| 7 | Продакшн-хардение (security, оплата) | ✅ Готово |
 
 ---
 

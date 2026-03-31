@@ -11,9 +11,33 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.config import settings
 from bot.database import close_db
-from bot.handlers import start, voice, media, digest, tasks, schedule, contacts, one_c_commands, calls, callbacks, chat
+from bot.handlers import (
+    start, voice, media, digest, tasks, schedule,
+    contacts, one_c_commands, calls, callbacks, chat,
+)
+from bot.handlers import payments
+from bot.middleware.rate_limit import RateLimitMiddleware
 
 logger = structlog.get_logger()
+
+
+def setup_sentry() -> None:
+    """Initialize Sentry error monitoring."""
+    if not settings.sentry_dsn:
+        return
+
+    try:
+        import sentry_sdk
+        sentry_sdk.init(
+            dsn=settings.sentry_dsn,
+            environment=settings.environment,
+            traces_sample_rate=0.1 if settings.is_production else 1.0,
+        )
+        logger.info("sentry_initialized")
+    except ImportError:
+        logger.warning("sentry_sdk_not_installed")
+    except Exception as e:
+        logger.warning("sentry_init_error", error=str(e))
 
 
 def setup_logging() -> None:
@@ -21,16 +45,27 @@ def setup_logging() -> None:
         level=getattr(logging, settings.log_level, logging.INFO),
         format="%(message)s",
     )
+
+    processors = [
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.add_logger_name,
+        structlog.processors.TimeStamper(fmt="iso"),
+    ]
+
+    if settings.is_production:
+        processors.append(structlog.processors.JSONRenderer())
+    else:
+        processors.append(structlog.dev.ConsoleRenderer())
+
     structlog.configure(
-        processors=[
-            structlog.stdlib.add_log_level,
-            structlog.dev.ConsoleRenderer(),
-        ],
+        processors=processors,
         logger_factory=structlog.stdlib.LoggerFactory(),
     )
 
 
 async def main() -> None:
+    # Initialize monitoring first
+    setup_sentry()
     setup_logging()
 
     bot = Bot(
@@ -39,11 +74,15 @@ async def main() -> None:
     )
     dp = Dispatcher(storage=MemoryStorage())
 
+    # Rate limiting middleware
+    dp.message.middleware(RateLimitMiddleware())
+
     # Register routers (order matters — first match wins)
     dp.include_router(start.router)         # /start, /help, onboarding FSM
     dp.include_router(digest.router)        # /digest
     dp.include_router(tasks.router)         # /tasks, /task, /done
-    dp.include_router(schedule.router)       # /search, /research, /events, /remind
+    dp.include_router(schedule.router)      # /search, /research, /events, /remind
+    dp.include_router(payments.router)      # /subscribe, /billing
     dp.include_router(contacts.router)      # /contacts, /contact
     dp.include_router(one_c_commands.router) # /waybills, /waybill, /orders
     dp.include_router(calls.router)         # /call, /calls
