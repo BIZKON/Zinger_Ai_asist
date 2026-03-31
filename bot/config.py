@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     elevenlabs_api_key: str = ""
     deepgram_api_key: str = ""
 
+    # ── Telephony (VoximPlant) ──
+    voximplant_account_id: str = ""
+    voximplant_api_key: str = ""
+    voximplant_app_id: str = ""
+    voximplant_rule_id: str = ""
+    call_ws_url: str = "ws://localhost:8001/voice/stream"
+
     # ── External APIs ──
     yandex_weather_key: str = ""
     yandex_maps_key: str = ""

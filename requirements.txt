@@ -22,6 +22,11 @@ anthropic>=0.40,<1
 # Web server (for webhook mode)
 aiohttp>=3.9,<4
 
+# Voice call engine
+fastapi>=0.115,<1
+uvicorn>=0.30,<1
+websockets>=13.0,<14
+
 # Logging
 structlog>=24.0,<25
 

@@ -151,7 +151,7 @@ personalai-sergiy/
 | 0 | Инфраструктура (Docker, CI/CD, структура) | ✅ Готово |
 | 1 | Ядро бота (характер, память, команды) | ✅ Готово |
 | 2 | 1С интеграция (OData, Cloudflare Tunnel) | ✅ Готово |
-| 3 | Голосовые звонки (VoximPlant, ElevenLabs) | ⏳ |
+| 3 | Голосовые звонки (VoximPlant, ElevenLabs) | ✅ Готово |
 | 4 | Media Intelligence Engine | ⏳ |
 | 5 | Research Engine + Проактивные сценарии | ⏳ |
 | 6 | Mini App (React) | ⏳ |
