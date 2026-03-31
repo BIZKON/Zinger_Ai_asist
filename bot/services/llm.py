@@ -1,29 +1,24 @@
-"""Claude API + каскадный роутинг LLM.
+"""Каскадный роутинг LLM.
 
-Каскад:
-  - simple (intent detection) → Gemini Flash (бесплатно)
-  - medium (обычный диалог)  → Claude Haiku
-  - complex (сложные задачи) → Claude Sonnet
+Приоритет:
+  1. OpenAI GPT-4o (основной, если есть ключ)
+  2. Anthropic Claude (fallback)
+  3. Gemini Flash (для простых интентов, бесплатно)
+
+Каскад по сложности:
+  - simple → Gemini Flash / GPT-4o-mini
+  - medium → GPT-4o / Claude Haiku
+  - complex → GPT-4o / Claude Sonnet
 """
 
 import time
 
 import httpx
 import structlog
-from anthropic import AsyncAnthropic
 
 from bot.config import settings
 
 logger = structlog.get_logger()
-
-_anthropic: AsyncAnthropic | None = None
-
-
-def _get_anthropic() -> AsyncAnthropic:
-    global _anthropic
-    if _anthropic is None:
-        _anthropic = AsyncAnthropic(api_key=settings.anthropic_api_key)
-    return _anthropic
 
 
 async def chat(
@@ -32,46 +27,98 @@ async def chat(
     complexity: str = "auto",
     max_tokens: int = 1024,
 ) -> str:
-    """Main LLM entry point with cascading routing.
-
-    Args:
-        messages: List of {"role": "user"|"assistant", "content": "..."}.
-        system_prompt: System prompt (persona + context).
-        complexity: "simple" | "medium" | "complex" | "auto".
-        max_tokens: Max response tokens.
-
-    Returns:
-        LLM response text.
-    """
+    """Main LLM entry point with cascading routing."""
     if complexity == "auto":
         complexity = _detect_complexity(messages)
 
+    # Try Gemini Flash for simple tasks (free)
     if complexity == "simple" and settings.gemini_api_key:
         return await _gemini_flash(messages, system_prompt, max_tokens)
-    elif complexity == "medium":
-        return await _claude(messages, system_prompt, max_tokens, model="claude-haiku-4-5-20251001")
-    else:
-        return await _claude(messages, system_prompt, max_tokens, model="claude-sonnet-4-5-20250514")
+
+    # Primary: OpenAI
+    if settings.openai_api_key:
+        model = "gpt-4o-mini" if complexity == "simple" else "gpt-4o"
+        return await _openai(messages, system_prompt, max_tokens, model)
+
+    # Fallback: Anthropic Claude
+    if settings.anthropic_api_key:
+        model = (
+            "claude-haiku-4-5-20251001" if complexity == "medium"
+            else "claude-sonnet-4-5-20250514"
+        )
+        return await _claude(messages, system_prompt, max_tokens, model)
+
+    return "Ни один LLM API не настроен. Добавь OPENAI_API_KEY или ANTHROPIC_API_KEY в .env"
 
 
 def _detect_complexity(messages: list[dict]) -> str:
-    """Simple heuristic to detect message complexity."""
     if not messages:
         return "medium"
-
     last_msg = messages[-1].get("content", "")
     word_count = len(last_msg.split())
-
-    # Short messages — simple intent detection
     if word_count <= 5:
         return "simple"
-    # Medium length — regular dialog
     elif word_count <= 50:
         return "medium"
-    # Long messages — complex tasks
-    else:
-        return "complex"
+    return "complex"
 
+
+# ── OpenAI ──
+
+async def _openai(
+    messages: list[dict],
+    system_prompt: str,
+    max_tokens: int,
+    model: str,
+) -> str:
+    """Call OpenAI ChatCompletion API."""
+    start = time.monotonic()
+
+    try:
+        oai_messages = []
+        if system_prompt:
+            oai_messages.append({"role": "system", "content": system_prompt})
+        oai_messages.extend(messages)
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {settings.openai_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": oai_messages,
+                    "max_tokens": max_tokens,
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+        elapsed = time.monotonic() - start
+        text = data["choices"][0]["message"]["content"]
+        usage = data.get("usage", {})
+
+        logger.info(
+            "llm_call",
+            model=model,
+            input_tokens=usage.get("prompt_tokens", 0),
+            output_tokens=usage.get("completion_tokens", 0),
+            elapsed_sec=round(elapsed, 2),
+        )
+        return text
+
+    except Exception as e:
+        logger.error("openai_error", model=model, error=str(e))
+        # Fallback to Claude if available
+        if settings.anthropic_api_key:
+            logger.info("falling_back_to_claude")
+            return await _claude(messages, system_prompt, max_tokens, "claude-haiku-4-5-20251001")
+        return "Ошибка при обращении к ИИ. Попробуй ещё раз."
+
+
+# ── Anthropic Claude ──
 
 async def _claude(
     messages: list[dict],
@@ -80,10 +127,12 @@ async def _claude(
     model: str,
 ) -> str:
     """Call Anthropic Claude API."""
-    client = _get_anthropic()
     start = time.monotonic()
 
     try:
+        from anthropic import AsyncAnthropic
+        client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+
         kwargs: dict = {
             "model": model,
             "max_tokens": max_tokens,
@@ -108,12 +157,11 @@ async def _claude(
         return text
 
     except Exception as e:
-        logger.error("llm_error", model=model, error=str(e))
-        # Fallback: try the other Claude model
-        if "haiku" in model:
-            return await _claude(messages, system_prompt, max_tokens, "claude-sonnet-4-5-20250514")
-        return "Извини, что-то пошло не так с ИИ. Попробуй ещё раз."
+        logger.error("claude_error", model=model, error=str(e))
+        return "Ошибка при обращении к ИИ. Попробуй ещё раз."
 
+
+# ── Gemini Flash ──
 
 async def _gemini_flash(
     messages: list[dict],
@@ -124,7 +172,6 @@ async def _gemini_flash(
     start = time.monotonic()
 
     try:
-        # Build Gemini-format messages
         contents = []
         for msg in messages:
             role = "user" if msg["role"] == "user" else "model"
@@ -155,15 +202,26 @@ async def _gemini_flash(
 
     except Exception as e:
         logger.warning("gemini_fallback", error=str(e))
-        # Fallback to Claude Haiku
-        return await _claude(messages, system_prompt, max_tokens, "claude-haiku-4-5-20251001")
+        # Fallback to primary
+        if settings.openai_api_key:
+            return await _openai(messages, system_prompt, max_tokens, "gpt-4o-mini")
+        if settings.anthropic_api_key:
+            return await _claude(messages, system_prompt, max_tokens, "claude-haiku-4-5-20251001")
+        return "Ошибка Gemini и нет fallback."
 
+
+# ── Utility ──
 
 async def extract_json(
     prompt: str,
     system_prompt: str = "Respond with valid JSON only. No markdown, no explanation.",
     max_tokens: int = 512,
 ) -> str:
-    """Call LLM expecting a JSON response (for fact extraction, intent detection, etc.)."""
+    """Call LLM expecting a JSON response."""
     messages = [{"role": "user", "content": prompt}]
-    return await _claude(messages, system_prompt, max_tokens, "claude-haiku-4-5-20251001")
+
+    if settings.openai_api_key:
+        return await _openai(messages, system_prompt, max_tokens, "gpt-4o-mini")
+    if settings.anthropic_api_key:
+        return await _claude(messages, system_prompt, max_tokens, "claude-haiku-4-5-20251001")
+    return "[]"

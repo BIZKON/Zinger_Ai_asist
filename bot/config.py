@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     redis_password: str = ""
 
     # ── LLM ──
+    openai_api_key: str = ""
     anthropic_api_key: str = ""
     gemini_api_key: str = ""
     openrouter_api_key: str = ""
