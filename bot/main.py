@@ -11,7 +11,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.config import settings
 from bot.database import close_db
-from bot.handlers import start, voice, digest, chat
+from bot.handlers import start, voice, digest, tasks, contacts, one_c_commands, callbacks, chat
 
 logger = structlog.get_logger()
 
@@ -40,10 +40,14 @@ async def main() -> None:
     dp = Dispatcher(storage=MemoryStorage())
 
     # Register routers (order matters — first match wins)
-    dp.include_router(start.router)    # /start, /help, onboarding FSM
-    dp.include_router(digest.router)   # /digest
-    dp.include_router(voice.router)    # voice/audio messages
-    dp.include_router(chat.router)     # text messages (catch-all, must be last)
+    dp.include_router(start.router)         # /start, /help, onboarding FSM
+    dp.include_router(digest.router)        # /digest
+    dp.include_router(tasks.router)         # /tasks, /task, /done
+    dp.include_router(contacts.router)      # /contacts, /contact
+    dp.include_router(one_c_commands.router) # /waybills, /waybill, /orders
+    dp.include_router(callbacks.router)     # inline button callbacks
+    dp.include_router(voice.router)         # voice/audio messages
+    dp.include_router(chat.router)          # text messages (catch-all, must be last)
 
     logger.info("starting_bot", environment=settings.environment)
 
