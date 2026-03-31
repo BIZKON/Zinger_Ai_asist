@@ -154,7 +154,7 @@ personalai-sergiy/
 | 3 | Голосовые звонки (VoximPlant, ElevenLabs) | ✅ Готово |
 | 4 | Media Intelligence Engine | ✅ Готово |
 | 5 | Research Engine + Проактивные сценарии | ✅ Готово |
-| 6 | Mini App (React) | ⏳ |
+| 6 | Mini App (React) | ✅ Готово |
 | 7 | Продакшн-хардение (security, оплата) | ⏳ |
 
 ---
