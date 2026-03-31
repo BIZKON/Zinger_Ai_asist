@@ -7,10 +7,11 @@ import structlog
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.config import settings
 from bot.database import close_db
-from bot.handlers import start
+from bot.handlers import start, voice, digest, chat
 
 logger = structlog.get_logger()
 
@@ -36,10 +37,13 @@ async def main() -> None:
         token=settings.bot_token,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
-    dp = Dispatcher()
+    dp = Dispatcher(storage=MemoryStorage())
 
-    # Register routers
-    dp.include_router(start.router)
+    # Register routers (order matters — first match wins)
+    dp.include_router(start.router)    # /start, /help, onboarding FSM
+    dp.include_router(digest.router)   # /digest
+    dp.include_router(voice.router)    # voice/audio messages
+    dp.include_router(chat.router)     # text messages (catch-all, must be last)
 
     logger.info("starting_bot", environment=settings.environment)
 
