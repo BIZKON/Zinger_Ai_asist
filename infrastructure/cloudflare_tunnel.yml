@@ -1,0 +1,14 @@
+# Cloudflare Tunnel — подключение к 1С on-premise
+# Установить cloudflared на сервер 1С Зингера и запустить как service
+#
+# Docs: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/
+#
+# TODO: Заполнить после создания туннеля в Cloudflare Dashboard
+
+tunnel: <TUNNEL_ID>
+credentials-file: /etc/cloudflare/<TUNNEL_ID>.json
+
+ingress:
+  - hostname: 1c.personalai.internal
+    service: http://localhost:80/zinger_ut
+  - service: http_status:404
