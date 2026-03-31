@@ -152,7 +152,7 @@ personalai-sergiy/
 | 1 | Ядро бота (характер, память, команды) | ✅ Готово |
 | 2 | 1С интеграция (OData, Cloudflare Tunnel) | ✅ Готово |
 | 3 | Голосовые звонки (VoximPlant, ElevenLabs) | ✅ Готово |
-| 4 | Media Intelligence Engine | ⏳ |
+| 4 | Media Intelligence Engine | ✅ Готово |
 | 5 | Research Engine + Проактивные сценарии | ⏳ |
 | 6 | Mini App (React) | ⏳ |
 | 7 | Продакшн-хардение (security, оплата) | ⏳ |

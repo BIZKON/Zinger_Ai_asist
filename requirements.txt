@@ -30,6 +30,12 @@ websockets>=13.0,<14
 # Logging
 structlog>=24.0,<25
 
+# Document parsing (optional)
+pypdf>=4.0,<5
+python-docx>=1.0,<2
+pandas>=2.0,<3
+openpyxl>=3.1,<4
+
 # Dev / QA
 ruff>=0.5
 mypy>=1.10

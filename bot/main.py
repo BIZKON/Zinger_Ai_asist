@@ -11,7 +11,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from bot.config import settings
 from bot.database import close_db
-from bot.handlers import start, voice, digest, tasks, contacts, one_c_commands, calls, callbacks, chat
+from bot.handlers import start, voice, media, digest, tasks, contacts, one_c_commands, calls, callbacks, chat
 
 logger = structlog.get_logger()
 
@@ -47,6 +47,7 @@ async def main() -> None:
     dp.include_router(one_c_commands.router) # /waybills, /waybill, /orders
     dp.include_router(calls.router)         # /call, /calls
     dp.include_router(callbacks.router)     # inline button callbacks
+    dp.include_router(media.router)         # photos, documents, files
     dp.include_router(voice.router)         # voice/audio messages
     dp.include_router(chat.router)          # text messages (catch-all, must be last)
 
