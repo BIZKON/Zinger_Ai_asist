@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "../api";
 
 interface Persona {
   key: string;
@@ -43,14 +44,19 @@ export default function CharacterShop() {
   const [selected, setSelected] = useState("sergiy");
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    api.getProfile().then((p) => setSelected(p.persona)).catch(() => {});
+  }, []);
+
   const handleSelect = async (key: string) => {
     setSelected(key);
     setSaving(true);
-
-    // TODO: Call API to save persona
-    // await fetch(`/api/user/persona`, { method: 'POST', body: JSON.stringify({ persona: key }) });
-
-    setTimeout(() => setSaving(false), 500);
+    try {
+      await api.updatePersona(key);
+    } catch (e) {
+      console.error("Failed to save persona", e);
+    }
+    setSaving(false);
   };
 
   return (

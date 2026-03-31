@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { api } from "../api";
 
 interface Props {
   userId: number | null;
@@ -14,12 +15,40 @@ export default function Settings({ userId }: Props) {
   const [quietFrom, setQuietFrom] = useState("23:00");
   const [quietTo, setQuietTo] = useState("07:00");
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api
+      .getProfile()
+      .then((p) => {
+        if (p.name) setName(p.name);
+        if (p.city) setCity(p.city);
+        if (p.timezone) setTimezone(p.timezone);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleSave = async () => {
-    // TODO: Call API to save settings
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    try {
+      await api.updateSettings({
+        name,
+        city,
+        timezone,
+        family: family || null,
+        auto: auto || null,
+        sport: sport || null,
+        quiet_hours_from: quietFrom,
+        quiet_hours_to: quietTo,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      console.error("Failed to save settings", e);
+    }
   };
+
+  if (loading) return <div className="loading">Загрузка...</div>;
 
   return (
     <div>

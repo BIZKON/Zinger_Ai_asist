@@ -1,15 +1,8 @@
 import { useState, useEffect } from "react";
+import { api, type Stats } from "../api";
 
 interface Props {
   userId: number | null;
-}
-
-interface Stats {
-  messages: number;
-  tasks_done: number;
-  calls: number;
-  files: number;
-  tokens_used: number;
 }
 
 export default function Dashboard({ userId }: Props) {
@@ -21,17 +14,15 @@ export default function Dashboard({ userId }: Props) {
     tokens_used: 0,
   });
   const [period, setPeriod] = useState<"week" | "month">("month");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch real stats from API
-    // Placeholder data
-    setStats({
-      messages: 342,
-      tasks_done: 28,
-      calls: 5,
-      files: 12,
-      tokens_used: 125000,
-    });
+    setLoading(true);
+    api
+      .getStats(period)
+      .then(setStats)
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [userId, period]);
 
   const statCards = [
@@ -60,15 +51,19 @@ export default function Dashboard({ userId }: Props) {
         </button>
       </div>
 
-      <div className="stats-grid">
-        {statCards.map((s) => (
-          <div key={s.label} className="stat-card">
-            <div style={{ fontSize: 24, marginBottom: 4 }}>{s.icon}</div>
-            <div className="stat-value">{s.value}</div>
-            <div className="stat-label">{s.label}</div>
-          </div>
-        ))}
-      </div>
+      {loading ? (
+        <div className="loading">Загрузка...</div>
+      ) : (
+        <div className="stats-grid">
+          {statCards.map((s) => (
+            <div key={s.label} className="stat-card">
+              <div style={{ fontSize: 24, marginBottom: 4 }}>{s.icon}</div>
+              <div className="stat-value">{s.value}</div>
+              <div className="stat-label">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="card" style={{ marginTop: 16 }}>
         <div className="card-title">Использование токенов</div>
