@@ -153,7 +153,7 @@ personalai-sergiy/
 | 2 | 1С интеграция (OData, Cloudflare Tunnel) | ✅ Готово |
 | 3 | Голосовые звонки (VoximPlant, ElevenLabs) | ✅ Готово |
 | 4 | Media Intelligence Engine | ✅ Готово |
-| 5 | Research Engine + Проактивные сценарии | ⏳ |
+| 5 | Research Engine + Проактивные сценарии | ✅ Готово |
 | 6 | Mini App (React) | ⏳ |
 | 7 | Продакшн-хардение (security, оплата) | ⏳ |
 
