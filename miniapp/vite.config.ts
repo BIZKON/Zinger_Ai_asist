@@ -7,4 +7,14 @@ export default defineConfig({
   build: {
     outDir: "dist",
   },
+  server: {
+    port: 5173,
+    // Проксируем API-запросы на backend (порт 8001)
+    proxy: {
+      "/api": {
+        target: "http://localhost:8001",
+        changeOrigin: true,
+      },
+    },
+  },
 });

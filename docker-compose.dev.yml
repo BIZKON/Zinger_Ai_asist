@@ -1,0 +1,74 @@
+# Быстрый старт для разработки.
+#
+# Нужно только:
+#   1. Скопировать .env.dev.example → .env
+#   2. Вписать BOT_TOKEN и ANTHROPIC_API_KEY
+#   3. docker compose -f docker-compose.dev.yml up --build
+#
+# Бот заработает в Telegram. Mini App — http://localhost:5173
+
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: bot/Dockerfile
+      target: dev
+    volumes:
+      - ./bot:/app/bot
+      - ./db:/app/db
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # API для Mini App (порт 8001)
+  api:
+    build:
+      context: .
+      dockerfile: bot/Dockerfile
+      target: dev
+    command: ["python", "-m", "bot.api.app"]
+    volumes:
+      - ./bot:/app/bot
+      - ./db:/app/db
+    env_file: .env
+    ports:
+      - "8001:8001"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: personalai
+      POSTGRES_USER: personalai
+      POSTGRES_PASSWORD: changeme
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U personalai"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
