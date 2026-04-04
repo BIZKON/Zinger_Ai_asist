@@ -4,6 +4,9 @@
   task_done:{task_id} — выполнить задачу
   wb:{number} — показать накладную
   order:{ref} — показать заказ
+  agent_approve:{task_id} — одобрить действие агента
+  agent_reject:{task_id} — отклонить действие агента
+  agent_info:{task_id} — подробности задачи агента
 """
 
 from __future__ import annotations
@@ -15,6 +18,7 @@ from aiogram import Router
 from aiogram.types import CallbackQuery
 
 from bot.config import settings
+from bot.orchestration.approval import handle_approval_callback
 from bot.services.one_c import one_c, format_waybill
 
 logger = structlog.get_logger()
@@ -69,3 +73,44 @@ async def callback_waybill(callback: CallbackQuery) -> None:
     except Exception as e:
         logger.error("callback_waybill_error", error=str(e))
         await callback.answer("Ошибка при запросе к 1С.")
+
+
+# ── Agent Approval Callbacks ──
+
+@router.callback_query(lambda c: c.data and c.data.startswith("agent_approve:"))
+async def callback_agent_approve(callback: CallbackQuery) -> None:
+    task_id = callback.data.split(":", 1)[1]
+    conn = await asyncpg.connect(settings.database_url_raw)
+    try:
+        await handle_approval_callback(callback, conn, task_id, "approve")
+    except Exception as e:
+        logger.error("agent_approve_error", error=str(e))
+        await callback.answer("Ошибка.")
+    finally:
+        await conn.close()
+
+
+@router.callback_query(lambda c: c.data and c.data.startswith("agent_reject:"))
+async def callback_agent_reject(callback: CallbackQuery) -> None:
+    task_id = callback.data.split(":", 1)[1]
+    conn = await asyncpg.connect(settings.database_url_raw)
+    try:
+        await handle_approval_callback(callback, conn, task_id, "reject")
+    except Exception as e:
+        logger.error("agent_reject_error", error=str(e))
+        await callback.answer("Ошибка.")
+    finally:
+        await conn.close()
+
+
+@router.callback_query(lambda c: c.data and c.data.startswith("agent_info:"))
+async def callback_agent_info(callback: CallbackQuery) -> None:
+    task_id = callback.data.split(":", 1)[1]
+    conn = await asyncpg.connect(settings.database_url_raw)
+    try:
+        await handle_approval_callback(callback, conn, task_id, "info")
+    except Exception as e:
+        logger.error("agent_info_error", error=str(e))
+        await callback.answer("Ошибка.")
+    finally:
+        await conn.close()

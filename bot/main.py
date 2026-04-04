@@ -14,8 +14,10 @@ from bot.database import close_db
 from bot.handlers import (
     start, voice, media, digest, tasks, schedule,
     contacts, one_c_commands, calls, callbacks, chat,
+    agents,
 )
 from bot.handlers import payments
+from bot.orchestration import heartbeat
 from bot.middleware.rate_limit import RateLimitMiddleware
 
 logger = structlog.get_logger()
@@ -86,12 +88,16 @@ async def main() -> None:
     dp.include_router(contacts.router)      # /contacts, /contact
     dp.include_router(one_c_commands.router) # /waybills, /waybill, /orders
     dp.include_router(calls.router)         # /call, /calls
+    dp.include_router(agents.router)        # /agents, /goals, /agent_cost
     dp.include_router(callbacks.router)     # inline button callbacks
     dp.include_router(media.router)         # photos, documents, files
     dp.include_router(voice.router)         # voice/audio messages
     dp.include_router(chat.router)          # text messages (catch-all, must be last)
 
     logger.info("starting_bot", environment=settings.environment)
+
+    # Start Agent Orchestration heartbeat
+    await heartbeat.start(bot)
 
     try:
         if settings.is_production and settings.webhook_url:
@@ -118,6 +124,7 @@ async def main() -> None:
             await bot.delete_webhook(drop_pending_updates=True)
             await dp.start_polling(bot)
     finally:
+        await heartbeat.stop()
         await close_db()
         await bot.session.close()
 

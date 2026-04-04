@@ -1,0 +1,21 @@
+{
+    "name": "glonass_tracking",
+    "display_name": "ГЛОНАСС Трекинг",
+    "description": "Отслеживание транспорта через ГЛОНАСС API",
+    "required_settings": [],
+    "actions": [
+        {
+            "id": "get_vehicle_position",
+            "description": "Текущая позиция транспорта",
+            "handler": "bot.orchestration.router.stub_handler",
+            "params": {"vehicle_id": "string"}
+        },
+        {
+            "id": "get_route_history",
+            "description": "История маршрута за период",
+            "handler": "bot.orchestration.router.stub_handler",
+            "params": {"vehicle_id": "string", "date": "string"}
+        }
+    ],
+    "llm_tools_schema": []
+}

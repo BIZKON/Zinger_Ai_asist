@@ -69,6 +69,12 @@ class Settings(BaseSettings):
     # ── Rate Limiting ──
     rate_limit_per_minute: int = 30
 
+    # ── Agent Orchestration ──
+    agent_heartbeat_enabled: bool = True
+    agent_default_budget_usd: float = 1.0
+    agent_max_retries: int = 3
+    agent_approval_timeout_hours: int = 24
+
     # ── App ──
     environment: str = "development"
     log_level: str = "INFO"

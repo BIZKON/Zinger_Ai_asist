@@ -1,0 +1,21 @@
+{
+    "name": "seo_content",
+    "display_name": "SEO Контент",
+    "description": "Генерация SEO-контента для бизнес-сайта",
+    "required_settings": [],
+    "actions": [
+        {
+            "id": "generate_article",
+            "description": "Сгенерировать SEO-статью",
+            "handler": "bot.orchestration.router.stub_handler",
+            "params": {"topic": "string", "keywords": "string"}
+        },
+        {
+            "id": "generate_meta",
+            "description": "Сгенерировать мета-теги",
+            "handler": "bot.orchestration.router.stub_handler",
+            "params": {"page_url": "string"}
+        }
+    ],
+    "llm_tools_schema": []
+}

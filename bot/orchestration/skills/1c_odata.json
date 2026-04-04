@@ -1,0 +1,38 @@
+{
+    "name": "1c_odata",
+    "display_name": "1С OData",
+    "description": "Запрос данных из 1С ERP через OData: накладные, заказы, контрагенты",
+    "required_settings": ["one_c_base_url", "one_c_username", "one_c_password"],
+    "actions": [
+        {
+            "id": "get_waybills",
+            "description": "Список последних накладных",
+            "handler": "bot.services.one_c.one_c.get_waybills"
+        },
+        {
+            "id": "get_waybill_by_number",
+            "description": "Детали накладной по номеру",
+            "handler": "bot.services.one_c.one_c.get_waybill_by_number",
+            "params": {"number": "string"}
+        },
+        {
+            "id": "get_orders",
+            "description": "Список заказов",
+            "handler": "bot.services.one_c.one_c.get_orders"
+        }
+    ],
+    "llm_tools_schema": [
+        {
+            "name": "query_1c_waybills",
+            "description": "Поиск накладных в 1С",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "date_from": {"type": "string", "format": "date"},
+                    "date_to": {"type": "string", "format": "date"},
+                    "number": {"type": "string"}
+                }
+            }
+        }
+    ]
+}

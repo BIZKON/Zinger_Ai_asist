@@ -1,0 +1,20 @@
+{
+    "name": "nps_survey",
+    "display_name": "NPS Опрос",
+    "description": "Отправка NPS опросов клиентам и сбор оценок",
+    "required_settings": [],
+    "actions": [
+        {
+            "id": "send_survey",
+            "description": "Отправить NPS опрос клиенту",
+            "handler": "bot.orchestration.router.stub_handler",
+            "params": {"customer_id": "string"}
+        },
+        {
+            "id": "get_scores",
+            "description": "Получить результаты NPS",
+            "handler": "bot.orchestration.router.stub_handler"
+        }
+    ],
+    "llm_tools_schema": []
+}

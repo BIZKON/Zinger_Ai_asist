@@ -1,0 +1,21 @@
+{
+    "name": "voice_call",
+    "display_name": "Голосовые звонки",
+    "description": "Инициация автоматических голосовых звонков через VoximPlant",
+    "required_settings": ["voximplant_account_id", "voximplant_api_key"],
+    "actions": [
+        {
+            "id": "initiate_call",
+            "description": "Начать голосовой звонок",
+            "handler": "bot.call_engine.orchestrator.initiate_call",
+            "params": {"phone_number": "string", "script": "string"}
+        },
+        {
+            "id": "get_call_status",
+            "description": "Статус звонка",
+            "handler": "bot.orchestration.router.stub_handler",
+            "params": {"call_id": "string"}
+        }
+    ],
+    "llm_tools_schema": []
+}

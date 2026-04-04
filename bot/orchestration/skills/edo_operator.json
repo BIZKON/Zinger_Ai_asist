@@ -1,0 +1,20 @@
+{
+    "name": "edo_operator",
+    "display_name": "ЭДО Оператор",
+    "description": "Работа с электронным документооборотом",
+    "required_settings": [],
+    "actions": [
+        {
+            "id": "list_documents",
+            "description": "Список документов ЭДО",
+            "handler": "bot.orchestration.router.stub_handler"
+        },
+        {
+            "id": "sign_document",
+            "description": "Подписать документ ЭДО",
+            "handler": "bot.orchestration.router.stub_handler",
+            "params": {"document_id": "string"}
+        }
+    ],
+    "llm_tools_schema": []
+}

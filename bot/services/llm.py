@@ -12,6 +12,7 @@
 """
 
 import time
+from typing import NamedTuple
 
 import httpx
 import structlog
@@ -19,6 +20,14 @@ import structlog
 from bot.config import settings
 
 logger = structlog.get_logger()
+
+
+class LLMResult(NamedTuple):
+    """Return type for chat_with_usage — includes token counts."""
+    text: str
+    model: str
+    input_tokens: int
+    output_tokens: int
 
 
 async def chat(
@@ -208,6 +217,101 @@ async def _gemini_flash(
         if settings.anthropic_api_key:
             return await _claude(messages, system_prompt, max_tokens, "claude-haiku-4-5-20251001")
         return "Ошибка Gemini и нет fallback."
+
+
+async def chat_with_usage(
+    messages: list[dict],
+    system_prompt: str = "",
+    complexity: str = "auto",
+    max_tokens: int = 1024,
+) -> LLMResult:
+    """Like chat(), but returns LLMResult with token counts."""
+    if complexity == "auto":
+        complexity = _detect_complexity(messages)
+
+    if complexity == "simple" and settings.gemini_api_key:
+        return await _gemini_flash_usage(messages, system_prompt, max_tokens)
+
+    if settings.openai_api_key:
+        model = "gpt-4o-mini" if complexity == "simple" else "gpt-4o"
+        return await _openai_usage(messages, system_prompt, max_tokens, model)
+
+    if settings.anthropic_api_key:
+        model = (
+            "claude-haiku-4-5-20251001" if complexity == "medium"
+            else "claude-sonnet-4-5-20250514"
+        )
+        return await _claude_usage(messages, system_prompt, max_tokens, model)
+
+    return LLMResult("Ни один LLM API не настроен.", "none", 0, 0)
+
+
+async def _openai_usage(
+    messages: list[dict], system_prompt: str, max_tokens: int, model: str,
+) -> LLMResult:
+    """OpenAI call returning LLMResult."""
+    t0 = time.monotonic()
+    try:
+        oai_messages = []
+        if system_prompt:
+            oai_messages.append({"role": "system", "content": system_prompt})
+        oai_messages.extend(messages)
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {settings.openai_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={"model": model, "messages": oai_messages, "max_tokens": max_tokens},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+        text = data["choices"][0]["message"]["content"]
+        usage = data.get("usage", {})
+        inp = usage.get("prompt_tokens", 0)
+        out = usage.get("completion_tokens", 0)
+        logger.info("llm_call", model=model, input_tokens=inp, output_tokens=out,
+                     elapsed_sec=round(time.monotonic() - t0, 2))
+        return LLMResult(text, model, inp, out)
+    except Exception as e:
+        logger.error("openai_usage_error", model=model, error=str(e))
+        if settings.anthropic_api_key:
+            return await _claude_usage(messages, system_prompt, max_tokens, "claude-haiku-4-5-20251001")
+        return LLMResult("Ошибка при обращении к ИИ.", model, 0, 0)
+
+
+async def _claude_usage(
+    messages: list[dict], system_prompt: str, max_tokens: int, model: str,
+) -> LLMResult:
+    """Claude call returning LLMResult."""
+    t0 = time.monotonic()
+    try:
+        from anthropic import AsyncAnthropic
+        client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+        kwargs: dict = {"model": model, "max_tokens": max_tokens, "messages": messages}
+        if system_prompt:
+            kwargs["system"] = system_prompt
+        response = await client.messages.create(**kwargs)
+        text = response.content[0].text if response.content else ""
+        inp = response.usage.input_tokens
+        out = response.usage.output_tokens
+        logger.info("llm_call", model=model, input_tokens=inp, output_tokens=out,
+                     elapsed_sec=round(time.monotonic() - t0, 2))
+        return LLMResult(text, model, inp, out)
+    except Exception as e:
+        logger.error("claude_usage_error", model=model, error=str(e))
+        return LLMResult("Ошибка при обращении к ИИ.", model, 0, 0)
+
+
+async def _gemini_flash_usage(
+    messages: list[dict], system_prompt: str, max_tokens: int,
+) -> LLMResult:
+    """Gemini Flash call returning LLMResult (tokens estimated as 0 — free tier)."""
+    text = await _gemini_flash(messages, system_prompt, max_tokens)
+    return LLMResult(text, "gemini-flash", 0, 0)
 
 
 # ── Utility ──

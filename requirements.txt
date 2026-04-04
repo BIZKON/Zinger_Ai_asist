@@ -37,6 +37,9 @@ python-docx>=1.0,<2
 pandas>=2.0,<3
 openpyxl>=3.1,<4
 
+# Scheduling
+apscheduler>=3.10,<4
+
 # Dev / QA
 ruff>=0.5
 mypy>=1.10
