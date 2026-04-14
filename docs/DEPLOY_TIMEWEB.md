@@ -10,8 +10,25 @@ SSL). PostgreSQL и Redis работают в Docker на том же VPS.
 - VPS на Timeweb Cloud (Ubuntu 22.04+, минимум 1 vCPU / 2 ГБ RAM)
 - SSH-доступ к VPS под `root` или пользователем с `sudo`
 - Токен Telegram-бота (@BotFather → `/newbot`)
-- API-ключ Claude (`console.anthropic.com`) или OpenAI (`platform.openai.com`)
+- **Ключ YandexGPT** (см. раздел «Получение ключа YandexGPT» ниже) —
+  Anthropic/OpenAI блокируют запросы из РФ, поэтому для VPS в
+  Санкт-Петербурге используем YandexGPT
 - Ваш Telegram ID (можно получить у @userinfobot)
+
+---
+
+## Получение ключа YandexGPT
+
+1. Зайдите в [Yandex Cloud Console](https://console.yandex.cloud/)
+2. Создайте **облако** и **каталог** (folder), если их нет
+3. Скопируйте **Folder ID** (строка вида `b1g...`) — он нужен для `.env`
+4. Откройте раздел «Сервисные аккаунты» → создайте аккаунт с ролью
+   `ai.languageModels.user`
+5. На странице созданного аккаунта: «Создать новый ключ» → **API-ключ**
+6. Скопируйте значение API-ключа (показывается один раз!) → в `.env` как
+   `YANDEX_GPT_API_KEY`
+7. Убедитесь, что в каталоге подключён сервис **Yandex Foundation Models**
+   (Биллинг → привязка платёжного аккаунта)
 
 ---
 
@@ -61,7 +78,8 @@ nano .env
 | `BOT_TOKEN` | @BotFather → `/newbot` | `123456:ABC-DEF...` |
 | `POSTGRES_PASSWORD` | Сгенерируйте сами | 32+ символов |
 | `REDIS_PASSWORD` | Сгенерируйте сами | 32+ символов |
-| `ANTHROPIC_API_KEY` | console.anthropic.com | `sk-ant-...` |
+| `YANDEX_GPT_API_KEY` | Yandex Cloud (см. выше) | `AQVN...` |
+| `YANDEX_GPT_FOLDER_ID` | Yandex Cloud Console | `b1g...` |
 | `ADMIN_USER_IDS` | @userinfobot | `123456789` |
 | `ENVIRONMENT` | вручную | `production` |
 
@@ -81,8 +99,9 @@ openssl rand -base64 32
 
 ### Опциональные ключи (можно добавить позже)
 
-- `OPENAI_API_KEY` — альтернатива Claude
-- `GEMINI_API_KEY` — бесплатные простые интенты
+- `ANTHROPIC_API_KEY` — Claude (работает только если VPS вне РФ)
+- `OPENAI_API_KEY` — GPT-4o (работает только если VPS вне РФ)
+- `GEMINI_API_KEY` — бесплатные простые интенты (может быть недоступен из РФ)
 - `ELEVENLABS_API_KEY`, `DEEPGRAM_API_KEY` — голосовые функции
 - `YANDEX_WEATHER_KEY`, `YANDEX_MAPS_KEY` — погода и пробки
 - `ONE_C_BASE_URL/USERNAME/PASSWORD` — интеграция с 1С
@@ -218,8 +237,10 @@ docker compose -f docker-compose.polling.yml down
 
 ### Ошибки LLM
 
-- `anthropic_error` → проверить `ANTHROPIC_API_KEY`, баланс в Anthropic Console
-- `openai_error` → проверить `OPENAI_API_KEY`
+- `yandex_gpt_error` → проверить `YANDEX_GPT_API_KEY` и `YANDEX_GPT_FOLDER_ID`,
+  баланс в Yandex Cloud, роль `ai.languageModels.user` у сервисного аккаунта
+- `anthropic_error` → Anthropic блокирует РФ-IP; используйте YandexGPT
+- `openai_error` → OpenAI блокирует РФ-IP; используйте YandexGPT
 
 ### Контейнер БД не стартует
 

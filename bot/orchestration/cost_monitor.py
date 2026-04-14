@@ -11,7 +11,11 @@ import structlog
 logger = structlog.get_logger()
 
 # Price per 1K tokens (USD)
+# YandexGPT цены указаны в USD по курсу ~90₽/$ (ноябрь 2024, могут меняться).
+# Актуальные тарифы: https://yandex.cloud/ru/docs/foundation-models/pricing
 PRICE_PER_1K = {
+    "yandexgpt": {"input": 0.0015, "output": 0.003},
+    "yandexgpt-lite": {"input": 0.0002, "output": 0.0004},
     "gpt-4o": {"input": 0.0025, "output": 0.01},
     "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
     "claude-sonnet-4-5-20250514": {"input": 0.003, "output": 0.015},

@@ -76,6 +76,20 @@ def test_calculate_cost_unknown_model():
     assert cost > 0
 
 
+def test_calculate_cost_yandexgpt():
+    """YandexGPT pricing should be in the table."""
+    cost = calculate_cost("yandexgpt", 1000, 500)
+    expected = 1000 / 1000 * 0.0015 + 500 / 1000 * 0.003
+    assert abs(cost - expected) < 1e-8
+
+
+def test_calculate_cost_yandexgpt_lite():
+    """YandexGPT-lite should be cheaper than main."""
+    lite = calculate_cost("yandexgpt-lite", 1000, 1000)
+    full = calculate_cost("yandexgpt", 1000, 1000)
+    assert lite < full
+
+
 # ── Pydantic models ──
 
 def test_agent_config_model():
